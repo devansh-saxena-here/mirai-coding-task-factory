@@ -1,0 +1,227 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ── Shared Primitives ─────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function hasValidParentUser(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId)) &&
+        get(/databases/$(database)/documents/users/$(userId)).data.uid == request.auth.uid;
+    }
+
+    function isBoundedStringList(arr, maxLen, maxItemLen) {
+      return arr is list &&
+        arr.size() <= maxLen &&
+        (arr.size() == 0 || (arr[0] is string && arr[0].size() <= maxItemLen));
+    }
+
+    // ── Entity Validation Blueprints ──────────────────────────────────────────
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'providerId', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'providerId', 'createdAt', 'updatedAt']) &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        data.uid == request.auth.uid &&
+        data.displayName is string && data.displayName.size() <= 120 &&
+        data.email is string && data.email.size() <= 254 &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1024)) &&
+        data.providerId is string && data.providerId in ['google.com', 'github.com'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidUserProject(data, userId, projectId) {
+      return data.keys().hasAll([
+          'id', 'ownerId', 'name', 'snapshotId', 'sourceType',
+          'repositoryIdentity', 'commitSha', 'fileCount',
+          'detectedLanguages', 'detectedFrameworks', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'ownerId', 'name', 'snapshotId', 'sourceType',
+          'repositoryIdentity', 'commitSha', 'fileCount',
+          'detectedLanguages', 'detectedFrameworks', 'readmeSummary', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == projectId &&
+        isValidId(data.ownerId) &&
+        data.ownerId == userId &&
+        data.ownerId == request.auth.uid &&
+        data.name is string && data.name.size() >= 1 && data.name.size() <= 160 &&
+        isValidId(data.snapshotId) &&
+        data.sourceType is string && data.sourceType in ['github', 'zip', 'unknown'] &&
+        data.repositoryIdentity is string && data.repositoryIdentity.size() <= 512 &&
+        data.commitSha is string && data.commitSha.size() <= 64 &&
+        data.fileCount is number && data.fileCount >= 0 && data.fileCount <= 50000 &&
+        isBoundedStringList(data.detectedLanguages, 12, 64) &&
+        isBoundedStringList(data.detectedFrameworks, 12, 64) &&
+        (!('readmeSummary' in data) || (data.readmeSummary is string && data.readmeSummary.size() <= 1500)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidUserTask(data, userId, taskId) {
+      return data.keys().hasAll([
+          'id', 'ownerId', 'projectId', 'snapshotId', 'title', 'topic',
+          'difficulty', 'language', 'category', 'verdict', 'revision',
+          'hasSolution', 'hasTestSuite', 'hasExport', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'ownerId', 'projectId', 'projectName', 'snapshotId', 'title',
+          'description', 'requirements', 'acceptanceCriteria', 'relevantFiles',
+          'topic', 'difficulty', 'language', 'category', 'verdict', 'revision',
+          'hasSolution', 'hasTestSuite', 'hasExport', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == taskId &&
+        isValidId(data.ownerId) &&
+        data.ownerId == userId &&
+        data.ownerId == request.auth.uid &&
+        data.projectId is string && data.projectId.size() <= 128 &&
+        (!('projectName' in data) || (data.projectName is string && data.projectName.size() <= 160)) &&
+        data.snapshotId is string && data.snapshotId.size() <= 128 &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 240 &&
+        (!('description' in data) || (data.description is string && data.description.size() <= 4000)) &&
+        (!('requirements' in data) || isBoundedStringList(data.requirements, 12, 400)) &&
+        (!('acceptanceCriteria' in data) || isBoundedStringList(data.acceptanceCriteria, 12, 400)) &&
+        (!('relevantFiles' in data) || isBoundedStringList(data.relevantFiles, 20, 200)) &&
+        data.topic is string && data.topic.size() <= 200 &&
+        data.difficulty is string && data.difficulty in ['easy', 'medium', 'hard'] &&
+        data.language is string && data.language.size() >= 1 && data.language.size() <= 64 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 64 &&
+        data.verdict is string && data.verdict in ['PENDING', 'VALIDATED', 'REJECTED', 'NOT_VALIDATED'] &&
+        data.revision is number && data.revision >= 1 && data.revision <= 100000 &&
+        data.hasSolution is bool &&
+        data.hasTestSuite is bool &&
+        data.hasExport is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // ── /users/{userId} (Private Profile / PII Isolated) ──────────────────────
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isVerifiedOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'photoURL', 'providerId', 'updatedAt']);
+
+      allow delete: if false;
+
+      // ── /users/{userId}/projects/{projectId} ────────────────────────────────
+      match /projects/{projectId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(projectId) &&
+          (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if isOwner(userId) && existing().ownerId == request.auth.uid;
+
+        allow create: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(projectId) &&
+          isValidUserProject(incoming(), userId, projectId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          hasValidParentUser(userId);
+
+        allow update: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(projectId) &&
+          isValidUserProject(incoming(), userId, projectId) &&
+          incoming().id == existing().id &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'name', 'snapshotId', 'sourceType', 'repositoryIdentity',
+            'commitSha', 'fileCount', 'detectedLanguages', 'detectedFrameworks',
+            'readmeSummary', 'updatedAt'
+          ]) &&
+          hasValidParentUser(userId);
+
+        allow delete: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(projectId) &&
+          existing().ownerId == request.auth.uid &&
+          hasValidParentUser(userId);
+      }
+
+      // ── /users/{userId}/tasks/{taskId} ──────────────────────────────────────
+      match /tasks/{taskId} {
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(taskId) &&
+          (resource == null || existing().ownerId == request.auth.uid);
+        allow list: if isOwner(userId) && existing().ownerId == request.auth.uid;
+
+        allow create: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(taskId) &&
+          isValidUserTask(incoming(), userId, taskId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          hasValidParentUser(userId);
+
+        allow update: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(taskId) &&
+          isValidUserTask(incoming(), userId, taskId) &&
+          incoming().id == existing().id &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'projectId', 'projectName', 'snapshotId', 'title', 'description',
+            'requirements', 'acceptanceCriteria', 'relevantFiles', 'topic',
+            'difficulty', 'language', 'category', 'verdict', 'revision',
+            'hasSolution', 'hasTestSuite', 'hasExport', 'updatedAt'
+          ]) &&
+          hasValidParentUser(userId);
+
+        allow delete: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(taskId) &&
+          existing().ownerId == request.auth.uid &&
+          hasValidParentUser(userId);
+      }
+    }
+  }
+}

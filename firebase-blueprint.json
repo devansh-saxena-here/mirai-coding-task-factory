@@ -1,0 +1,285 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private authenticated user profile synced from Google or GitHub sign-in.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Authentication user UID."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 120,
+          "description": "User display name from Google or GitHub."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 254,
+          "description": "Primary email address (PII, strictly owner-only)."
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 1024,
+          "description": "Optional avatar URL from provider."
+        },
+        "providerId": {
+          "type": "string",
+          "enum": ["google.com", "github.com"],
+          "description": "Primary OAuth provider used for sign-in."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when user profile was first created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the last profile update."
+        }
+      },
+      "required": ["uid", "displayName", "email", "providerId", "createdAt", "updatedAt"]
+    },
+    "UserProject": {
+      "title": "UserProject",
+      "description": "Analyzed repository snapshot summary saved under a specific user ID.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Project document identifier."
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase UID."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "description": "Repository or project name."
+        },
+        "snapshotId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Associated immutable snapshot ID."
+        },
+        "sourceType": {
+          "type": "string",
+          "enum": ["github", "zip", "unknown"],
+          "description": "Repository ingestion source."
+        },
+        "repositoryIdentity": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "Repository URL or archive fingerprint."
+        },
+        "commitSha": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Pinned Git commit SHA or empty string for ZIP uploads."
+        },
+        "fileCount": {
+          "type": "number",
+          "description": "Total indexed file count in snapshot."
+        },
+        "detectedLanguages": {
+          "type": "array",
+          "description": "Detected programming languages (max 12)."
+        },
+        "detectedFrameworks": {
+          "type": "array",
+          "description": "Detected frameworks (max 12)."
+        },
+        "readmeSummary": {
+          "type": "string",
+          "maxLength": 1500,
+          "description": "Optional README excerpt for quick cloud display."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of project creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of latest update."
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "name",
+        "snapshotId",
+        "sourceType",
+        "repositoryIdentity",
+        "commitSha",
+        "fileCount",
+        "detectedLanguages",
+        "detectedFrameworks",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserTask": {
+      "title": "UserTask",
+      "description": "Generated coding benchmark task and workflow status saved under a specific user ID.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Task document identifier."
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase UID."
+        },
+        "projectId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Optional parent project identifier."
+        },
+        "projectName": {
+          "type": "string",
+          "maxLength": 160,
+          "description": "Optional parent repository name."
+        },
+        "snapshotId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Optional source snapshot identifier."
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240,
+          "description": "Task headline."
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 4000,
+          "description": "Optional full task description for cloud restore."
+        },
+        "requirements": {
+          "type": "array",
+          "description": "Optional task requirements list (max 12)."
+        },
+        "acceptanceCriteria": {
+          "type": "array",
+          "description": "Optional task acceptance criteria list (max 12)."
+        },
+        "relevantFiles": {
+          "type": "array",
+          "description": "Optional relevant repository file paths (max 20)."
+        },
+        "topic": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Task topic or focus area."
+        },
+        "difficulty": {
+          "type": "string",
+          "enum": ["easy", "medium", "hard"],
+          "description": "Task difficulty tier."
+        },
+        "language": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Primary implementation language."
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Task engineering category."
+        },
+        "verdict": {
+          "type": "string",
+          "enum": ["PENDING", "VALIDATED", "REJECTED", "NOT_VALIDATED"],
+          "description": "Latest validation verdict."
+        },
+        "revision": {
+          "type": "number",
+          "description": "Workflow revision counter."
+        },
+        "hasSolution": {
+          "type": "boolean",
+          "description": "Whether a reference solution has been synthesized."
+        },
+        "hasTestSuite": {
+          "type": "boolean",
+          "description": "Whether a test suite has been synthesized."
+        },
+        "hasExport": {
+          "type": "boolean",
+          "description": "Whether a Harbor export archive exists."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of task creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of latest task update."
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "projectId",
+        "snapshotId",
+        "title",
+        "topic",
+        "difficulty",
+        "language",
+        "category",
+        "verdict",
+        "revision",
+        "hasSolution",
+        "hasTestSuite",
+        "hasExport",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user account profile keyed by Firebase Auth UID."
+    },
+    "/users/{userId}/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/UserProject" },
+      "description": "Analyzed repository projects scoped to a specific user UID."
+    },
+    "/users/{userId}/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/UserTask" },
+      "description": "Generated benchmark tasks and workflow summaries scoped to a specific user UID."
+    }
+  }
+}

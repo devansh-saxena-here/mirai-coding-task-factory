@@ -1,0 +1,8 @@
+{
+  "name": "MIRAI",
+  "description": "MIRAI turns real repositories into reproducible coding tasks with reference solutions, traceable tests, isolated validation, and AI agent evaluation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

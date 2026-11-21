@@ -1,0 +1,158 @@
+.marketing { --mirai-navy: #08254a; --mirai-blue: #1262de; color: var(--mirai-navy); background: #fff; font-size: 15px; line-height: 1.7; }
+.marketing a:focus-visible { outline: 3px solid #1262de; outline-offset: 5px; border-radius: 4px; }
+.marketing .mirai-container { max-width: 1220px; padding-left: 40px; padding-right: 40px; margin-left: auto; margin-right: auto; }
+.mirai-header { max-width: 1300px; margin: auto; min-height: 105px; padding: 12px 40px; display: flex; align-items: center; justify-content: space-between; gap: 30px; }
+.mirai-brand { display: flex; flex-shrink: 0; }
+.mirai-brand img { object-fit: contain; }
+.mirai-header nav, .mirai-footer nav { display: flex; align-items: center; gap: 32px; font-size: 14px; font-weight: 500; }
+.mirai-header nav a:hover, .mirai-header nav a.active, .mirai-footer a:hover { color: #1262de; }
+.marketing .mirai-button { background: var(--mirai-navy); color: white; display: inline-flex; align-items: center; justify-content: center; gap: 13px; padding: 15px 23px; border-radius: 9px; font-size: 14px; font-weight: 600; line-height: 1.4; transition: background .18s, transform .18s; }
+.marketing .mirai-button:hover { background: #124b88; transform: translateY(-2px); }
+.marketing .mirai-button.small { padding: 12px 18px; }
+.mirai-hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 65px; align-items: center; padding-top: 67px; padding-bottom: 85px; }
+.mirai-eyebrow { display: flex; align-items: center; gap: 9px; font-size: 11px; text-transform: uppercase; letter-spacing: .14em; font-weight: 700; color: #537090; margin-bottom: 21px; }
+.mirai-eyebrow > span { width: 7px; height: 7px; border-radius: 50%; background: #16ac73; }
+.marketing h1 { font-size: clamp(38px, 4.4vw, 60px); letter-spacing: -.055em; line-height: 1.1; font-weight: 650; margin-bottom: 25px; }
+.marketing h1 em { color: #1262de; font-style: normal; }
+.mirai-lead { font-size: 17px; line-height: 1.8; color: #587088; max-width: 560px; }
+.mirai-actions { display: flex; gap: 25px; align-items: center; flex-wrap: wrap; margin-top: 31px; }
+.mirai-text-link { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #1262de; }
+.mirai-text-link:hover { text-decoration: underline; }
+.mirai-hero-note { color: #6b7e93; font-size: 11px; margin-top: 23px; }
+.mirai-preview { border: 1px solid #dee6ef; border-radius: 18px; background: #fff; box-shadow: 0 24px 65px #143f7012; overflow: hidden; transform: rotate(1deg); }
+.mirai-preview-top { padding: 16px 20px; display: flex; align-items: center; gap: 8px; font-size: 9px; letter-spacing: .09em; color: #687c93; border-bottom: 1px solid #edf1f6; }
+.mirai-preview-top > span:last-child { margin-left: auto; }
+.mirai-preview-dot { height: 6px; width: 6px; border-radius: 50%; background: #ffc300; }
+.mirai-logo-panel { text-align: center; padding: 18px 20px 26px; }
+.mirai-logo-panel img { display: block; margin: auto; max-width: 75%; height: auto; }
+.mirai-logo-panel p { color: #64758a; font-size: 12px; margin-top: 9px; }
+.mirai-pipeline { display: grid; grid-template-columns: repeat(5, 1fr); padding: 16px; border-top: 1px solid #edf1f6; gap: 6px; background: #f8faff; }
+.mirai-pipeline > div { border-right: 1px solid #e3eaf2; padding-left: 7px; }
+.mirai-pipeline > div:last-child { border: none; }
+.mirai-pipeline span { display: block; font-size: 10px; color: #7c8fa5; }
+.mirai-pipeline strong { font-size: 10px; font-weight: 600; }
+.mirai-preview-foot { display: flex; gap: 7px; align-items: center; justify-content: center; color: #627891; font-size: 10px; padding: 12px; }
+.mirai-principles { display: flex; justify-content: center; flex-wrap: wrap; gap: 22px 65px; padding: 23px 30px; border-top: 1px solid #eaf0f6; border-bottom: 1px solid #eaf0f6; background: #fafcfe; color: #5b7088; font-size: 12px; }
+.mirai-principles span::before { content: '•'; color: #13a86b; margin-right: 11px; }
+.mirai-section { padding-top: 95px; padding-bottom: 95px; scroll-margin-top: 24px; }
+.marketing h2 { font-size: clamp(29px, 3vw, 39px); line-height: 1.2; letter-spacing: -.04em; font-weight: 650; }
+.mirai-section-heading { display: flex; justify-content: space-between; gap: 55px; align-items: end; margin-bottom: 40px; }
+.mirai-section-heading > p { max-width: 340px; color: #62768e; font-size: 14px; }
+.mirai-feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.mirai-feature { padding: 29px; border: 1px solid #e4ebf3; border-radius: 13px; }
+.mirai-icon { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 23px; }
+.mirai-icon.blue { color: #1262de; background: #edf4ff; }.mirai-icon.green { color: #008e5b; background: #eaf8f1; }.mirai-icon.yellow { color: #9b7400; background: #fff8db; }.mirai-icon.red { color: #d34b39; background: #fff0ed; }
+.marketing h3 { font-size: 17px; letter-spacing: -.02em; font-weight: 650; margin-bottom: 10px; }
+.mirai-feature p { color: #61758c; font-size: 13px; line-height: 1.85; }
+.mirai-workflow { background: #092649; color: #fff; padding-top: 75px; padding-bottom: 65px; scroll-margin-top: 20px; }
+.mirai-workflow .mirai-eyebrow { color: #94b7dc; }.mirai-workflow h2 { color: #fff; }
+.mirai-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 35px; margin-top: 48px; }
+.mirai-step-number { display: block; border-top: 1px solid #31506f; padding-top: 18px; color: #ffcd3a; font-size: 12px; margin-bottom: 20px; }
+.mirai-steps p { color: #abc0d7; font-size: 13px; line-height: 1.85; }
+.mirai-runtime-note { border-top: 1px solid #31506f; margin-top: 38px; padding-top: 20px; font-size: 11px; color: #abc0d7; }
+.mirai-evidence { display: grid; grid-template-columns: 1fr 1fr; gap: 100px; align-items: center; }.mirai-evidence .mirai-lead { font-size: 15px; margin-top: 23px; margin-bottom: 23px; }
+.mirai-evidence ul { list-style: none; }.mirai-evidence li { padding: 17px 0; border-bottom: 1px solid #e4ebf3; display: flex; align-items: center; gap: 13px; font-size: 14px; }.mirai-evidence li svg { color: #0b9f67; flex-shrink: 0; }
+.marketing .mirai-cta { margin-top: 5px; margin-bottom: 80px; padding-top: 44px; padding-bottom: 44px; background: #eff5ff; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; gap: 25px; }.mirai-cta p:last-child { margin-top: 16px; color: #62768e; font-size: 14px; }.mirai-cta .mirai-button { flex-shrink: 0; }
+.mirai-footer { border-top: 1px solid #e6ecf3; max-width: 1220px; margin: auto; padding: 36px 40px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 30px; }.mirai-wordmark { font-size: 24px; font-weight: 750; letter-spacing: .06em; }.mirai-wordmark span { color: #ffc300; }.mirai-footer p { color: #7b8ba0; font-size: 11px; }.mirai-footer nav { gap: 22px; font-size: 12px; }
+.mirai-about-hero { padding-top: 75px; padding-bottom: 70px; }.mirai-about-hero .mirai-lead { max-width: 720px; }.mirai-about-story { display: grid; grid-template-columns: 1fr 1.5fr; gap: 70px; align-items: center; }.mirai-about-story > img { max-width: 100%; height: auto; margin: auto; }.mirai-about-story p:not(.mirai-eyebrow) { color: #62768e; margin-top: 20px; }.mirai-feature-grid.about { margin-top: 35px; }.mirai-about-scope { display: grid; grid-template-columns: 1fr 1fr; gap: 100px; }.mirai-about-scope p:not(.mirai-eyebrow) { color: #abc0d7; margin-top: 20px; font-size: 14px; }.mirai-about-scope h3 { margin-top: 24px; }.mirai-about-scope h3:first-child { margin-top: 0; }
+.mirai-skip { position: absolute; top: -100px; left: 20px; z-index: 100; background: white; padding: 12px; }.mirai-skip:focus { top: 10px; }
+@media (max-width: 1000px) {
+  .mirai-hero { gap: 30px; }
+  .mirai-actions { gap: 18px; }
+  .mirai-evidence { gap: 45px; }
+  .mirai-steps { gap: 23px; }
+  .mirai-feature { padding: 22px; }
+  .mirai-about-scope { gap: 50px; }
+}
+@media (max-width: 760px) {
+  .marketing .mirai-container { padding-left: 18px; padding-right: 18px; }
+  .mirai-header { min-height: 68px; padding: 10px 18px; gap: 12px 16px; flex-wrap: wrap; }
+  .mirai-brand img { width: 52px; height: 50px; }
+  .mirai-header nav { order: 3; justify-content: space-between; width: 100%; padding: 6px 0 4px; gap: 16px; border-top: 1px solid rgba(148, 163, 184, 0.22); }
+  .mirai-header nav a { padding: 8px 4px; min-height: 40px; display: inline-flex; align-items: center; }
+  .mirai-hero { grid-template-columns: 1fr; padding-top: 28px; padding-bottom: 42px; gap: 32px; }
+  .mirai-preview { transform: none; max-width: 480px; width: 100%; margin: auto; }
+  .mirai-principles { justify-content: start; gap: 10px 20px; padding: 18px; }
+  .mirai-section { padding-top: 48px; padding-bottom: 48px; }
+  .mirai-section-heading { flex-direction: column; align-items: start; gap: 14px; margin-bottom: 28px; }
+  .mirai-feature-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .mirai-steps { grid-template-columns: repeat(2, 1fr); gap: 22px; margin-top: 32px; }
+  .mirai-evidence, .mirai-about-story, .mirai-about-scope { grid-template-columns: 1fr; gap: 28px; }
+  .marketing .mirai-cta { margin: 8px 16px 40px; padding: 28px 20px; flex-direction: column; align-items: stretch; }
+  .marketing .mirai-cta .mirai-button { width: 100%; }
+  .mirai-footer { padding: 28px 18px; gap: 18px; }
+  .mirai-footer nav { flex-wrap: wrap; gap: 12px 20px; }
+  .mirai-about-hero { padding-top: 36px; padding-bottom: 32px; }
+  .mirai-about-story > img { max-width: 200px; }
+  .mirai-workflow { padding-top: 44px; padding-bottom: 40px; }
+}
+@media (max-width: 480px) {
+  .mirai-feature-grid { grid-template-columns: 1fr; }
+  .marketing h1 { font-size: 32px; }
+  .marketing h2 { font-size: 25px; }
+  .mirai-header .mirai-button.small { padding: 10px 13px; font-size: 12.5px; min-height: 40px; }
+  .mirai-actions { flex-direction: column; align-items: stretch; gap: 14px; }
+  .mirai-actions .mirai-button { width: 100%; min-height: 46px; }
+  .mirai-actions .mirai-text-link { justify-content: center; min-height: 42px; }
+  .mirai-steps { grid-template-columns: 1fr; gap: 20px; }
+  .mirai-lead { font-size: 15px; }
+  .mirai-pipeline { grid-template-columns: repeat(2, 1fr); padding: 12px; gap: 10px; }
+  .mirai-pipeline > div { border-right: none; border-bottom: 1px solid rgba(148, 163, 184, 0.22); padding: 0 0 8px 0; }
+  .mirai-pipeline > div:last-child { border-bottom: none; padding-bottom: 0; grid-column: 1 / -1; }
+  .mirai-pipeline strong { font-size: 11px; }
+  .mirai-footer { flex-direction: column; align-items: start; }
+}
+@media (prefers-reduced-motion: reduce) { .marketing .mirai-button { transition: none; }.marketing .mirai-button:hover { transform: none; } }
+
+.mirai-header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.mirai-brand img { border-radius: 10px; }
+
+/* Dark mode for marketing pages: light-black + neutral grey + crisp white + accents where needed */
+:root.dark .marketing { --mirai-navy: #f5f5f7; --mirai-blue: #6ea8ff; color: #f5f5f7; background: #121214; }
+:root.dark .marketing a:focus-visible { outline-color: #818cf8; }
+:root.dark .mirai-brand img { background: #ffffff; padding: 3px; }
+:root.dark .mirai-header nav a { color: #b5b5c0; }
+:root.dark .mirai-header nav a:hover,
+:root.dark .mirai-header nav a.active,
+:root.dark .mirai-footer a:hover { color: #ffffff; }
+:root.dark .marketing .mirai-button { background: #f5f5f7; color: #121214; }
+:root.dark .marketing .mirai-button:hover { background: #e2e2e8; }
+:root.dark .mirai-eyebrow { color: #9c9ca9; }
+:root.dark .marketing h1 em { color: #6ea8ff; }
+:root.dark .mirai-lead,
+:root.dark .mirai-section-heading > p,
+:root.dark .mirai-feature p,
+:root.dark .mirai-cta p:last-child,
+:root.dark .mirai-about-story p:not(.mirai-eyebrow) { color: #b5b5c0; }
+:root.dark .mirai-text-link { color: #6ea8ff; }
+:root.dark .mirai-hero-note,
+:root.dark .mirai-footer p { color: #8b8b98; }
+:root.dark .mirai-preview { border-color: #2e2e36; background: #1b1b1f; box-shadow: 0 24px 65px rgba(0, 0, 0, 0.55); }
+:root.dark .mirai-preview-top { color: #9c9ca9; border-bottom-color: #2a2a32; }
+:root.dark .mirai-logo-panel img { background: #ffffff; border-radius: 12px; padding: 10px; }
+:root.dark .mirai-logo-panel p { color: #b5b5c0; }
+:root.dark .mirai-pipeline { border-top-color: #2a2a32; background: #16161a; }
+:root.dark .mirai-pipeline > div { border-right-color: #2a2a32; }
+:root.dark .mirai-pipeline span { color: #8b8b98; }
+:root.dark .mirai-pipeline strong { color: #f5f5f7; }
+:root.dark .mirai-preview-foot { color: #9c9ca9; }
+:root.dark .mirai-principles { border-top-color: #26262e; border-bottom-color: #26262e; background: #161619; color: #b5b5c0; }
+:root.dark .mirai-feature { border-color: #2c2c34; background: #1b1b1f; }
+:root.dark .mirai-icon.blue { color: #7cb2ff; background: rgba(59, 130, 246, 0.14); }
+:root.dark .mirai-icon.green { color: #4ade80; background: rgba(34, 197, 94, 0.14); }
+:root.dark .mirai-icon.yellow { color: #fbbf24; background: rgba(245, 158, 11, 0.14); }
+:root.dark .mirai-icon.red { color: #f87171; background: rgba(239, 68, 68, 0.14); }
+:root.dark .mirai-workflow { background: #18181c; border-top: 1px solid #2a2a32; border-bottom: 1px solid #2a2a32; color: #f5f5f7; }
+:root.dark .mirai-workflow .mirai-eyebrow { color: #9c9ca9; }
+:root.dark .mirai-step-number { border-top-color: #34343f; color: #fbbf24; }
+:root.dark .mirai-steps p,
+:root.dark .mirai-runtime-note,
+:root.dark .mirai-about-scope p:not(.mirai-eyebrow) { color: #b5b5c0; }
+:root.dark .mirai-runtime-note { border-top-color: #34343f; }
+:root.dark .mirai-evidence li { border-bottom-color: #2c2c34; color: #e4e4ec; }
+:root.dark .mirai-evidence li svg { color: #4ade80; }
+:root.dark .marketing .mirai-cta { background: #1b1b1f; border: 1px solid #2e2e36; }
+:root.dark .mirai-footer { border-top-color: #2a2a32; }
+:root.dark .mirai-about-story > img { background: #ffffff; border-radius: 14px; padding: 12px; }
+:root.dark .mirai-skip { background: #1b1b1f; color: #f5f5f7; border: 1px solid #44444f; }
+
