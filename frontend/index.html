@@ -15,15 +15,19 @@
     <script>
       (function () {
         try {
-          var saved = localStorage.getItem('mirai.theme');
-          var dark = saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var saved = localStorage.getItem('mirai.theme.v2');
+          var dark = saved === 'dark';
           if (dark) {
             document.documentElement.classList.add('dark');
             document.documentElement.setAttribute('data-theme', 'dark');
           } else {
+            document.documentElement.classList.remove('dark');
             document.documentElement.setAttribute('data-theme', 'light');
           }
-        } catch (e) {}
+        } catch (e) {
+          document.documentElement.classList.remove('dark');
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
       })();
     </script>
   </head>

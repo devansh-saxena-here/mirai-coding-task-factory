@@ -4,6 +4,11 @@ import { AlertCircle, CheckCircle2, Info, RotateCcw, ShieldCheck, Trophy } from 
 import { AgentProgressBar } from '../components/AgentProgressBar';
 import { EvidenceHistory } from '../components/EvidenceHistory';
 import { EvidenceLog } from '../components/EvidenceLog';
+import {
+  findModelSpec,
+  MODEL_PRESETS_BY_SLOT,
+  ModelInfoTooltip,
+} from '../components/ModelInfoTooltip';
 import { PageHeader } from '../components/PageHeader';
 import { StatusBadge } from '../components/StatusBadge';
 import { useProject } from '../context/ProjectContext';
@@ -26,6 +31,7 @@ interface ModelSlot {
   enabled: boolean;
   model: string;
   placeholder: string;
+  customMode?: boolean;
 }
 
 const DEFAULT_SLOTS: ModelSlot[] = [
@@ -342,6 +348,18 @@ export function EvaluationPage() {
     );
   };
 
+  const selectSlotPreset = (slotId: ModelSlot['id'], selectedValue: string) => {
+    setSlots((prev) =>
+      prev.map((slot) => {
+        if (slot.id !== slotId) return slot;
+        if (selectedValue === '__custom__') {
+          return { ...slot, customMode: true };
+        }
+        return { ...slot, model: selectedValue, customMode: false };
+      })
+    );
+  };
+
   const resetDefaults = () => {
     setSlots(DEFAULT_SLOTS);
     setRepeats(1);
@@ -511,6 +529,13 @@ export function EvaluationPage() {
                     : status.tone === 'warning'
                       ? 'var(--warning-text)'
                       : 'var(--text-muted)';
+                const presets = MODEL_PRESETS_BY_SLOT[slot.id];
+                const matchedPreset = presets.find(
+                  (preset) => preset.id.toLowerCase() === slot.model.trim().toLowerCase()
+                );
+                const isCustom = Boolean(slot.customMode || !matchedPreset);
+                const dropdownValue = isCustom ? '__custom__' : matchedPreset!.id;
+                const activeSpec = findModelSpec(slot.model);
 
                 return (
                   <div
@@ -553,22 +578,68 @@ export function EvaluationPage() {
                       </span>
                     </label>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-                        Model identifier
-                      </span>
-                      <input
-                        value={slot.model}
-                        maxLength={140}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <div className="model-select-label-row">
+                        <label
+                          htmlFor={`model-select-${slot.id}`}
+                          style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 500 }}
+                        >
+                          Model selection
+                        </label>
+                        <ModelInfoTooltip
+                          slotId={slot.id}
+                          selectedModelId={slot.model}
+                          slotDisplayName={slot.displayName}
+                        />
+                      </div>
+
+                      <select
+                        id={`model-select-${slot.id}`}
+                        value={dropdownValue}
                         disabled={!slot.enabled}
-                        placeholder={slot.placeholder}
-                        onChange={(e) => updateSlotModel(slot.id, e.target.value)}
+                        onChange={(e) => selectSlotPreset(slot.id, e.target.value)}
+                        title={
+                          activeSpec
+                            ? `${activeSpec.label} — ${activeSpec.parameters} · ${activeSpec.contextWindow} context. ${activeSpec.bestFor}`
+                            : `Custom model identifier (${slot.model || slot.placeholder})`
+                        }
                         style={{
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '12px',
+                          fontSize: '12.5px',
                           width: '100%',
                         }}
-                      />
+                      >
+                        {presets.map((preset) => (
+                          <option
+                            key={preset.id}
+                            value={preset.id}
+                            title={`${preset.parameters} · ${preset.contextWindow} · ${preset.bestFor}`}
+                          >
+                            {preset.label}
+                          </option>
+                        ))}
+                        <option value="__custom__">Custom model identifier…</option>
+                      </select>
+
+                      {isCustom ? (
+                        <input
+                          aria-label={`${slot.displayName} custom model identifier`}
+                          value={slot.model}
+                          maxLength={140}
+                          disabled={!slot.enabled}
+                          placeholder={slot.placeholder}
+                          onChange={(e) => updateSlotModel(slot.id, e.target.value)}
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '12px',
+                            width: '100%',
+                          }}
+                        />
+                      ) : activeSpec ? (
+                        <div className="model-spec-caption">
+                          <span>{activeSpec.parameters}</span>
+                          <span>· {activeSpec.contextWindow} context</span>
+                        </div>
+                      ) : null}
                     </div>
 
                     <div

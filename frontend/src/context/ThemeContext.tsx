@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 
 export type ThemeMode = 'light' | 'dark';
 
-const STORAGE_KEY = 'mirai.theme';
+const STORAGE_KEY = 'mirai.theme.v2';
 
 function getInitialTheme(): ThemeMode {
   if (typeof window === 'undefined') return 'light';
@@ -12,8 +12,7 @@ function getInitialTheme(): ThemeMode {
   } catch {
     // Ignore storage access restrictions
   }
-  if (document.documentElement.classList.contains('dark')) return 'dark';
-  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return 'light';
 }
 
 function applyThemeToDom(mode: ThemeMode) {
@@ -23,6 +22,14 @@ function applyThemeToDom(mode: ThemeMode) {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) {
     meta.setAttribute('content', mode === 'dark' ? '#121214' : '#08254a');
+  }
+}
+
+function persistTheme(mode: ThemeMode) {
+  try {
+    localStorage.setItem(STORAGE_KEY, mode);
+  } catch {
+    // Ignore storage access restrictions
   }
 }
 
@@ -39,19 +46,19 @@ export const ThemeProvider: React.FC<React.PropsWithChildren> = ({ children }) =
 
   useEffect(() => {
     applyThemeToDom(theme);
-    try {
-      localStorage.setItem(STORAGE_KEY, theme);
-    } catch {
-      // Ignore storage access restrictions
-    }
   }, [theme]);
 
   const setTheme = useCallback((mode: ThemeMode) => {
+    persistTheme(mode);
     setThemeState(mode);
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setThemeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setThemeState((prev) => {
+      const next: ThemeMode = prev === 'dark' ? 'light' : 'dark';
+      persistTheme(next);
+      return next;
+    });
   }, []);
 
   return (

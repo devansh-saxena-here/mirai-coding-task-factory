@@ -1,3 +1,74 @@
+<style>
+  @keyframes miraiFadeSlideUp {
+    0% {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes miraiSoftGlow {
+    0%, 100% {
+      box-shadow: 0 4px 18px rgba(26, 86, 219, 0.08);
+    }
+    50% {
+      box-shadow: 0 8px 28px rgba(14, 165, 233, 0.18);
+    }
+  }
+
+  .mirai-logo {
+    border-radius: 16px;
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.32s ease;
+  }
+
+  .mirai-logo:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 12px 28px rgba(11, 31, 58, 0.16);
+  }
+
+  .mirai-showcase-img {
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  .mirai-showcase-img:hover {
+    transform: translateY(-4px) scale(1.018);
+    border-color: rgba(26, 86, 219, 0.55);
+    box-shadow: 0 14px 30px rgba(11, 31, 58, 0.18);
+  }
+
+  .mirai-workflow-section {
+    animation: miraiFadeSlideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .mirai-workflow-diagram {
+    border-radius: 16px;
+    animation: miraiFadeSlideUp 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both, miraiSoftGlow 4.5s ease-in-out infinite;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease;
+  }
+
+  .mirai-workflow-diagram:hover {
+    transform: translateY(-3px) scale(1.008);
+    box-shadow: 0 16px 34px rgba(11, 31, 58, 0.18);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mirai-workflow-section,
+    .mirai-workflow-diagram {
+      animation: none;
+    }
+    .mirai-logo,
+    .mirai-showcase-img,
+    .mirai-workflow-diagram {
+      transition: none;
+    }
+  }
+</style>
+
 <div align="center">
 
 <!-- Animated Header Wave -->
@@ -6,13 +77,13 @@
 <br />
 
 <!-- Official MIRAI Logo -->
-<img src="./frontend/public/mirai-logo.jpg" alt="MIRAI Official Logo" width="175" />
+<img src="./frontend/public/mirai-logo.jpg" class="mirai-logo" alt="MIRAI Official Logo" width="175" />
 
 <br />
 <br />
 
 <!-- Animated Typing Tagline -->
-<a href="#end-to-end-pipeline">
+<a href="#mirai-workflow">
   <img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=21&duration=3000&pause=900&color=1A56DB&center=true&vCenter=true&multiline=false&repeat=true&width=780&height=42&lines=Real+Code.+Meaningful+Tasks.+Measurable+Progress.;Immutable+Snapshots+%E2%86%92+Grounded+Specs+%E2%86%92+Reference+Patches;5-Gate+Isolated+Validation+%2B+1-Click+AI+Auto-Repair;Harbor+1.4+Packaging+%26+Granular+Multi-Agent+Benchmarking" alt="MIRAI Animated Tagline" />
 </a>
 
@@ -42,7 +113,7 @@
   <a href="#why-mirai">Overview</a> •
   <a href="#standout-capabilities">Capabilities</a> •
   <a href="#product-showcase">Showcase</a> •
-  <a href="#end-to-end-pipeline">Workflow</a> •
+  <a href="#mirai-workflow">MIRAI Workflow</a> •
   <a href="#system-architecture">Architecture</a> •
   <a href="#quick-start">Quick Start</a> •
   <a href="#hackathon-requirement-mapping">Track 1 Rubric</a>
@@ -108,24 +179,32 @@ From a single workspace, MIRAI captures an immutable repository snapshot, author
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="./screenshot/1.jpeg" alt="MIRAI Landing Hero" width="100%" />
+      <a href="./screenshot/1.jpeg">
+        <img src="./screenshot/1.jpeg" class="mirai-showcase-img" alt="MIRAI Landing Hero" width="100%" />
+      </a>
       <br />
       <sub><b>Landing Experience</b> — Source-to-evidence coding evaluation overview</sub>
     </td>
     <td align="center" width="50%">
-      <img src="./screenshot/5.jpeg" alt="MIRAI Repository Ingestion Workspace" width="100%" />
+      <a href="./screenshot/5.jpeg">
+        <img src="./screenshot/5.jpeg" class="mirai-showcase-img" alt="MIRAI Repository Ingestion Workspace" width="100%" />
+      </a>
       <br />
       <sub><b>Authenticated Workspace</b> — ZIP & GitHub ingestion with live job status</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
-      <img src="./screenshot/2.jpeg" alt="MIRAI Toolkit Capabilities" width="100%" />
+      <a href="./screenshot/2.jpeg">
+        <img src="./screenshot/2.jpeg" class="mirai-showcase-img" alt="MIRAI Toolkit Capabilities" width="100%" />
+      </a>
       <br />
       <sub><b>Benchmark Toolkit</b> — Immutable snapshots, traceable tests, Harbor export & agent eval</sub>
     </td>
     <td align="center" width="50%">
-      <img src="./screenshot/4.jpeg" alt="MIRAI End-to-End Pipeline" width="100%" />
+      <a href="./screenshot/4.jpeg">
+        <img src="./screenshot/4.jpeg" class="mirai-showcase-img" alt="MIRAI End-to-End Pipeline" width="100%" />
+      </a>
       <br />
       <sub><b>4-Phase Factory Flow</b> — Bring your code, define, verify, and evaluate</sub>
     </td>
@@ -135,7 +214,9 @@ From a single workspace, MIRAI captures an immutable repository snapshot, author
 <details>
   <summary><b>View More — About & Design Philosophy Screenshot</b></summary>
   <br />
-  <img src="./screenshot/3.jpeg" alt="About MIRAI" width="88%" />
+  <a href="./screenshot/3.jpeg">
+    <img src="./screenshot/3.jpeg" class="mirai-showcase-img" alt="About MIRAI" width="88%" />
+  </a>
   <br />
   <sub><b>About MIRAI</b> — Closing the gap between generated code and verified working software</sub>
 </details>
@@ -144,7 +225,30 @@ From a single workspace, MIRAI captures an immutable repository snapshot, author
 
 ---
 
-## End-to-End Pipeline
+## MIRAI Workflow
+
+<div class="mirai-workflow-section" align="center">
+
+<!-- Animated CSS Keyframe Workflow Diagram (runs natively on GitHub & Markdown viewers) -->
+<a href="./docs/mirai-workflow-animated.svg">
+  <img src="./docs/mirai-workflow-animated.svg" class="mirai-workflow-diagram" width="100%" alt="MIRAI 6-Stage Animated Workflow Diagram" />
+</a>
+
+</div>
+
+<br />
+
+| Stage | Workspace Route | What Happens | Verified Artifact |
+| :---: | :--- | :--- | :--- |
+| **01** | `/new-project` | Analyze a GitHub URL (with optional commit SHA) or `.zip` archive | Immutable `snapshot_id` + SHA-256 manifest |
+| **02** | `/task-generator` | Generate a contextual feature specification with live stage progress bar | Structured task spec + acceptance criteria |
+| **03** | `/solution` & `/test-suite` | Synthesize file-level reference patch and requirement-mapped tests | Reviewable patch + feature/regression suites |
+| **04** | `/validation` | Run 5 isolated gates (Baseline, Build, Feature, Regression, Negative Control) + optional **Auto-Fix with AI** | Per-gate pass/fail verdict + full stdout/stderr logs |
+| **05** | `/export` | Assemble a Harbor 1.4-compatible benchmark archive | Downloadable `.zip` (`task.toml`, `solve.sh`, `test.sh`) |
+| **06** | `/evaluation` & `/leaderboard` | Benchmark Oracle, Baseline No-Op, Gemini, GPT-OSS 120B, and Qwen 3.5 397B with Protected-Test Guard | Per-test breakdown, Partial Score %, Charts & CSVs |
+
+<details>
+  <summary><b>View Interactive Mermaid Workflow Graph</b></summary>
 
 ```mermaid
 flowchart LR
@@ -165,14 +269,7 @@ flowchart LR
     S3 --> S4 --> S5
 ```
 
-| Stage | Workspace Route | What Happens | Verified Artifact |
-| :---: | :--- | :--- | :--- |
-| **01** | `/new-project` | Analyze a GitHub URL (with optional commit SHA) or `.zip` archive | Immutable `snapshot_id` + SHA-256 manifest |
-| **02** | `/task-generator` | Generate a contextual feature specification with live stage progress bar | Structured task spec + acceptance criteria |
-| **03** | `/solution` & `/test-suite` | Synthesize file-level reference patch and requirement-mapped tests | Reviewable patch + feature/regression suites |
-| **04** | `/validation` | Run 5 isolated gates (Baseline, Build, Feature, Regression, Negative Control) + optional **Auto-Fix with AI** | Per-gate pass/fail verdict + full stdout/stderr logs |
-| **05** | `/export` | Assemble a Harbor 1.4-compatible benchmark archive | Downloadable `.zip` (`task.toml`, `solve.sh`, `test.sh`) |
-| **06** | `/evaluation` & `/leaderboard` | Benchmark Oracle, Baseline No-Op, Gemini, GPT-OSS 120B, and Qwen 3.5 397B with Protected-Test Guard | Per-test breakdown, Partial Score %, Charts & CSVs |
+</details>
 
 > [!TIP]
 > **Workspace Navigation**
