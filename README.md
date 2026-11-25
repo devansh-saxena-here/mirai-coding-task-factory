@@ -492,7 +492,7 @@ All authenticated endpoints require `Authorization: Bearer <Firebase ID Token>`.
 
 <div align="center">
 
-<sub>Built with precision for <b>Innodata AI Hackathon 2026 · Track 1</b> — Turning real codebases into verifiable coding benchmarks.</sub>
+<sub>Built with precision for <b> AI Hackathon 2026 · Track 1</b> — Turning real codebases into verifiable coding benchmarks.</sub>
 
 <br />
 <br />
