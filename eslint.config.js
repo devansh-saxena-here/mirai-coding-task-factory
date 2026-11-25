@@ -1,3 +1,4 @@
+import js from '@eslint/js';
 import firebaseRulesPlugin from '@firebase/eslint-plugin-security-rules';
 
 export default [
@@ -7,10 +8,18 @@ export default [
       'frontend/**/*',
       'server/**/*',
       'server.ts',
+      'tests/**/*',
       'node_modules/**/*',
       '.mirai-state/**/*',
-      'eslint.config.js',
+      '.phase8-work/**/*',
     ],
   },
-  firebaseRulesPlugin.configs['flat/recommended'],
+  {
+    files: ['eslint.config.js'],
+    ...js.configs.recommended,
+  },
+  {
+    files: ['firestore.rules'],
+    ...firebaseRulesPlugin.configs['flat/recommended'],
+  },
 ];

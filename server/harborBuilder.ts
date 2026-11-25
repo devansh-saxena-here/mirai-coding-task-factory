@@ -17,6 +17,15 @@ import {
   type CommandRunResult,
   type TestSuiteRunResult,
 } from './sandboxRunner.ts';
+import {
+  buildSuiteBreakdownFromRun,
+  collectProtectedTestFiles,
+  computePartialScore,
+  countExpectedCases,
+  emptySuiteBreakdown,
+  makeRate,
+} from './testBreakdown.ts';
+export { evaluationSummaryCsv, evaluationTrialsCsv } from './evaluationCsv.ts';
 import type {
   BenchmarkMetrics,
   EvaluationReport,
@@ -24,13 +33,11 @@ import type {
   JobOptions,
   JobProgress,
   JobProgressStep,
-  Rate,
   RepoAnalysisResponse,
   SavedExport,
   SolutionResponse,
   SuiteBreakdown,
   TaskResponse,
-  TestCaseOutcome,
   TestExecutionResult,
   TestSuiteResponse,
   Trial,
@@ -255,8 +262,6 @@ export function runValidationGates(params: {
   // ── Gates 2, 3, 4: Patched Isolated Workspace (Reference, Feature, Regression) ──
   const patchedWorkspace = createIsolatedWorkspace(params.snapshotFiles);
   let referenceOk = false;
-  let featureOk = false;
-  let regressionOk = false;
   let mutationStatus: ValidationReport['mutation_test_status'] = 'not_run';
 
   try {
@@ -375,7 +380,6 @@ export function runValidationGates(params: {
         featDetail = featRun.skippedReason || 'Language runtime is not available in this sandbox.';
         rejectionReasons.push(featDetail);
       } else if (featRun.passed) {
-        featureOk = true;
         featStatus = 'passed';
         featDetail = `Executed ${featRun.totalExecuted} feature test(s) in isolated workspace: ${featRun.passedCount} passed, 0 failed.`;
       } else if (
@@ -397,7 +401,6 @@ export function runValidationGates(params: {
         featLogParts.push(astRes.detail);
 
         if (syntax.ok && astRes.ok && astRes.changedSymbolCount > 0) {
-          featureOk = true;
           featStatus = 'passed';
           featCmdRun = astRes.command;
           featureResult = {
@@ -488,7 +491,6 @@ export function runValidationGates(params: {
       const allRegressionTargets = Array.from(new Set([...runnableOriginal, ...writtenReg]));
 
       if (allRegressionTargets.length === 0) {
-        regressionOk = true;
         regStatus = 'passed';
         regDetail = `Protected ${existingTests.size} original test file(s); no additional regression files to run.`;
         regCmdRun = {
@@ -519,7 +521,6 @@ export function runValidationGates(params: {
           regDetail = regRun.skippedReason || 'Language runtime is not available in this sandbox.';
           rejectionReasons.push(regDetail);
         } else if (regRun.passed) {
-          regressionOk = true;
           regStatus = 'passed';
           regDetail = `Executed ${regRun.totalExecuted} regression test(s) across ${allRegressionTargets.length} file(s): ${regRun.passedCount} passed, 0 failed.`;
         } else if (
@@ -539,7 +540,6 @@ export function runValidationGates(params: {
           regLogParts.push(astRes.detail);
 
           if (syntax.ok && astRes.ok && astRes.preservedExistingSymbols) {
-            regressionOk = true;
             regStatus = 'passed';
             regCmdRun = astRes.command;
             regressionResult = {
@@ -599,7 +599,6 @@ export function runValidationGates(params: {
 
   // ── Gate 5: Real Negative Control (Run feature tests against UNTREATED snapshot) ──
   const negWorkspace = createIsolatedWorkspace(params.snapshotFiles);
-  let negativeControlOk = false;
   try {
     const negLogParts: string[] = [
       `[MIRAI Isolated Validation] Gate: negative_control`,
@@ -663,7 +662,6 @@ export function runValidationGates(params: {
         negLogParts.push(`[MIRAI AST Negative Control] External package "${negRun.missingDependency}" unavailable in pip-less sandbox.`);
         negLogParts.push(astNeg.detail);
         if (astNeg.ok && !astNeg.vacuousTests && params.solution.files.length > 0) {
-          negativeControlOk = true;
           negStatus = 'passed';
           mutationStatus = 'passed';
           negDetail = `Untreated baseline could not import external dep "${negRun.missingDependency}" in cloud sandbox (full runtime negative control runs in Harbor Docker). Verified via AST: ${astNeg.testFunctionCount} feature test(s) with ${astNeg.assertionCount} non-trivial assertion(s) targeting changed files.`;
@@ -676,7 +674,6 @@ export function runValidationGates(params: {
         }
       } else if (!negRun.passed && !negRun.command.timed_out) {
         // Negative control SUCCEEDS when untreated baseline genuinely FAILS the new feature tests!
-        negativeControlOk = true;
         negStatus = 'passed';
         mutationStatus = 'passed';
         negDetail = `Confirmed untreated baseline fails new feature tests (${negRun.failedCount} failed, ${negRun.errorCount} import/runtime errors, exit ${negRun.command.exit_code}). Feature tests genuinely detect the missing implementation.`;
@@ -935,25 +932,6 @@ fi
   return { meta, buffer };
 }
 
-function wilson95(k: number, n: number): [number, number] | null {
-  if (n <= 0) return null;
-  const z = 1.96;
-  const p = k / n;
-  const denom = 1 + (z * z) / n;
-  const center = (p + (z * z) / (2 * n)) / denom;
-  const margin = (z * Math.sqrt((p * (1 - p) + (z * z) / (4 * n)) / n)) / denom;
-  return [Math.max(0, center - margin), Math.min(1, center + margin)];
-}
-
-function makeRate(numerator: number, denominator: number): Rate {
-  return {
-    numerator,
-    denominator,
-    value: denominator > 0 ? numerator / denominator : null,
-    wilson95: wilson95(numerator, denominator),
-  };
-}
-
 interface CandidateVerificationResult {
   supported: boolean;
   buildPassed: boolean;
@@ -965,60 +943,6 @@ interface CandidateVerificationResult {
   timedOut: boolean;
   logText: string;
   breakdown: TrialTestBreakdown;
-}
-
-function countExpectedCases(testFiles: TestSuiteResponse['feature_test_files'], fallbackTotal = 0): number {
-  const fromMeta = testFiles.reduce((sum, tf) => sum + (tf.test_cases?.length || 0), 0);
-  if (fromMeta > 0) return fromMeta;
-  if (fallbackTotal > 0) return fallbackTotal;
-  return testFiles.length;
-}
-
-function emptySuiteBreakdown(expectedTotal: number): SuiteBreakdown {
-  return {
-    passed: 0,
-    failed: expectedTotal,
-    errors: 0,
-    skipped: 0,
-    total: expectedTotal,
-    pass_rate: expectedTotal > 0 ? 0 : null,
-    cases: [],
-  };
-}
-
-function buildSuiteBreakdownFromRun(
-  run: TestSuiteRunResult,
-  kind: 'feature' | 'regression',
-  expectedTotal: number
-): SuiteBreakdown {
-  const passed = run.passedCount || 0;
-  const failed = run.failedCount || 0;
-  const errors = run.errorCount || 0;
-  const skipped = run.skippedCount || 0;
-  const executed = Math.max(run.totalExecuted || 0, passed + failed + errors);
-  const total = executed > 0 ? executed : expectedTotal;
-  const effectiveFailed = executed > 0 ? failed : (run.passed ? 0 : Math.max(0, total - passed - errors));
-  const cases: TestCaseOutcome[] = (run.cases || []).map((c) => ({
-    name: c.name,
-    status: c.status,
-    kind,
-  }));
-
-  return {
-    passed,
-    failed: effectiveFailed,
-    errors,
-    skipped,
-    total,
-    pass_rate: total > 0 ? Number((passed / total).toFixed(4)) : null,
-    cases,
-  };
-}
-
-function computePartialScore(feature: SuiteBreakdown, regression: SuiteBreakdown): number | null {
-  const total = feature.total + regression.total;
-  if (total <= 0) return null;
-  return Number(((feature.passed + regression.passed) / total).toFixed(4));
 }
 
 function verifyCandidateInIsolatedSandbox(params: {
@@ -1442,14 +1366,7 @@ export async function runEvaluationCampaign(params: {
     }
   };
 
-  const protectedTestFiles = Array.from(
-    new Set([
-      ...(params.snapshot.existing_test_files || []),
-      ...((params.testSuite.original_regression_files || []).map((f) => f.path)),
-    ]
-      .map((p) => p.replace(/\\/g, '/').replace(/^\/+/, '').trim())
-      .filter(Boolean))
-  );
+  const protectedTestFiles = collectProtectedTestFiles(params.snapshot, params.testSuite);
 
   // ── Real Oracle Control Verification ───────────────────────────────────
   setStep('oracle', 'running', 'Verifying reference solution in isolated sandbox');
@@ -1942,55 +1859,4 @@ export async function runEvaluationCampaign(params: {
     trials,
     metrics,
   };
-}
-
-export function evaluationSummaryCsv(report: EvaluationReport): string {
-  const header =
-    'evaluation_id,label,model,scheduled,scored,verified_success,mean_partial_score,feature_cases_passed,feature_cases_total,regression_cases_passed,regression_cases_total,feature_pass,regression_pass,build_success,mean_agent_seconds,input_tokens,output_tokens';
-  const rows = report.metrics.map((m) =>
-    [
-      report.id,
-      m.label,
-      m.model ?? '',
-      m.scheduled,
-      m.scored,
-      m.verified_success.value ?? '',
-      m.mean_partial_score ?? '',
-      m.feature_cases_passed ?? '',
-      m.feature_cases_total ?? '',
-      m.regression_cases_passed ?? '',
-      m.regression_cases_total ?? '',
-      m.feature_pass.value ?? '',
-      m.regression_pass.value ?? '',
-      m.build_success.value ?? '',
-      m.mean_agent_seconds?.toFixed(2) ?? '',
-      m.input_tokens_total ?? '',
-      m.output_tokens_total ?? '',
-    ].join(',')
-  );
-  return [header, ...rows].join('\n') + '\n';
-}
-
-export function evaluationTrialsCsv(report: EvaluationReport): string {
-  const header = 'evaluation_id,role,label,attempt,model,reward,partial_score,feature_passed,feature_total,regression_passed,regression_total,protected_guard_passed,trustworthy,failure';
-  const all = [report.oracle, report.baseline_control, ...report.trials].filter(Boolean) as Trial[];
-  const rows = all.map((t) =>
-    [
-      report.id,
-      t.role,
-      t.label,
-      t.attempt,
-      t.configuration?.model || t.resolved_models[0] || '',
-      t.reward ?? '',
-      t.test_breakdown?.partial_score ?? '',
-      t.test_breakdown?.feature.passed ?? '',
-      t.test_breakdown?.feature.total ?? '',
-      t.test_breakdown?.regression.passed ?? '',
-      t.test_breakdown?.regression.total ?? '',
-      t.test_breakdown ? t.test_breakdown.protected_guard_passed : '',
-      t.trustworthy,
-      t.failure ?? '',
-    ].join(',')
-  );
-  return [header, ...rows].join('\n') + '\n';
 }

@@ -404,10 +404,11 @@ npm run build
 npm run dev
 ```
 
-Open **`http://localhost:3000`** in your browser. To type-check both frontend and backend workspaces:
+Open **`http://localhost:3000`** in your browser. To run strict typechecking, static analysis (`oxlint` + Firestore rules ESLint), and the automated unit & API test suite:
 
 ```bash
 npm run lint
+npm test
 ```
 
 <details>

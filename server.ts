@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
@@ -403,7 +404,7 @@ function executeJobInBackground(jobId: string, options: JobOptions) {
   });
 }
 
-async function startServer() {
+export function createApp(options: { serveFrontend?: boolean } = {}) {
   const app = express();
 
   app.use(express.json({ limit: '15mb' }));
@@ -901,28 +902,40 @@ async function startServer() {
   });
 
   // ── Frontend Serving (Built SPA from frontend/dist) ─────────────
-  const indexHtml = path.join(FRONTEND_DIST, 'index.html');
-  if (!fs.existsSync(indexHtml)) {
-    console.log('frontend/dist not found — building frontend...');
-    execSync('npm --workspace=frontend run build', { stdio: 'inherit' });
-  }
+  if (options.serveFrontend !== false) {
+    const indexHtml = path.join(FRONTEND_DIST, 'index.html');
+    if (!fs.existsSync(indexHtml)) {
+      console.log('frontend/dist not found — building frontend...');
+      execSync('npm --workspace=frontend run build', { stdio: 'inherit' });
+    }
 
-  app.use(express.static(FRONTEND_DIST));
-  app.use((req, res, next) => {
-    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
-    return res.sendFile(indexHtml);
-  });
+    app.use(express.static(FRONTEND_DIST));
+    app.use((req, res, next) => {
+      if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+      return res.sendFile(indexHtml);
+    });
+  }
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     return sendError(res, err);
   });
 
-  app.listen(PORT, HOST, () => {
+  return app;
+}
+
+export async function startServer() {
+  const app = createApp({ serveFrontend: true });
+  return app.listen(PORT, HOST, () => {
     console.log(`MIRAI server listening on http://${HOST}:${PORT}`);
   });
 }
 
-startServer().catch((err) => {
-  console.error('Failed to start MIRAI server:', err);
-  process.exit(1);
-});
+const isDirectEntry =
+  process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isDirectEntry) {
+  startServer().catch((err) => {
+    console.error('Failed to start MIRAI server:', err);
+    process.exit(1);
+  });
+}

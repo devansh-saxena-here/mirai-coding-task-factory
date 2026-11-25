@@ -1,38 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, Info, RotateCcw, ShieldCheck, Trophy } from 'lucide-react';
+import { AlertCircle, RotateCcw, ShieldCheck, Trophy } from 'lucide-react';
 import { AgentProgressBar } from '../components/AgentProgressBar';
 import { EvidenceHistory } from '../components/EvidenceHistory';
-import { EvidenceLog } from '../components/EvidenceLog';
 import {
-  findModelSpec,
-  MODEL_PRESETS_BY_SLOT,
-  ModelInfoTooltip,
-} from '../components/ModelInfoTooltip';
+  ComparisonMatrixTable,
+  formatBenchmarkRate,
+} from '../components/evaluation/ComparisonMatrixTable';
+import {
+  ModelSlotCard,
+  type ModelSlot,
+  type SlotReadiness,
+} from '../components/evaluation/ModelSlotCard';
+import { TrialEvidencePanel } from '../components/evaluation/TrialEvidencePanel';
 import { PageHeader } from '../components/PageHeader';
 import { StatusBadge } from '../components/StatusBadge';
 import { useProject } from '../context/ProjectContext';
 import { workflow } from '../services/workflowService';
 import { isActive } from '../types/workflow';
-import type {
-  BenchmarkMetrics,
-  EvaluationProvidersStatus,
-  EvaluationReport,
-  SuiteBreakdown,
-  Trial,
-} from '../types/evaluation';
-
-interface ModelSlot {
-  id: 'gemini' | 'gpt_oss' | 'qwen';
-  label: string;
-  displayName: string;
-  family: string;
-  provider: 'gemini' | 'groq' | 'adaption';
-  enabled: boolean;
-  model: string;
-  placeholder: string;
-  customMode?: boolean;
-}
+import type { EvaluationProvidersStatus, EvaluationReport } from '../types/evaluation';
 
 const DEFAULT_SLOTS: ModelSlot[] = [
   {
@@ -69,11 +55,6 @@ const DEFAULT_SLOTS: ModelSlot[] = [
 
 const MAX_CAMPAIGN_TRIALS = 9;
 
-const displayRate = (rate: BenchmarkMetrics['verified_success']) =>
-  rate.value === null
-    ? 'Unavailable'
-    : `${(100 * rate.value).toFixed(1)}% (${rate.numerator}/${rate.denominator})`;
-
 function normalizeModelId(raw: string): string {
   const trimmed = raw.trim();
   if (/^gemini-[A-Za-z0-9][A-Za-z0-9._-]{0,89}$/.test(trimmed)) {
@@ -105,141 +86,6 @@ function inferProvider(modelId: string): 'gemini' | 'groq' | 'adaption' | 'other
   if (lower.startsWith('groq/')) return 'groq';
   if (lower.startsWith('adaption/')) return 'adaption';
   return 'other';
-}
-
-function SuiteCaseList({ title, suite }: { title: string; suite: SuiteBreakdown }) {
-  if (suite.total === 0 && suite.cases.length === 0) return null;
-  const pct = suite.pass_rate !== null ? `${(suite.pass_rate * 100).toFixed(0)}%` : '–';
-  return (
-    <div className="eval-breakdown-suite">
-      <div className="eval-breakdown-suite-head">
-        <span>{title}</span>
-        <span className="eval-breakdown-counts">
-          {suite.passed}/{suite.total} passed ({pct})
-          {suite.failed > 0 ? ` · ${suite.failed} failed` : ''}
-          {suite.errors > 0 ? ` · ${suite.errors} errors` : ''}
-          {suite.skipped > 0 ? ` · ${suite.skipped} skipped` : ''}
-        </span>
-      </div>
-      {suite.cases.length > 0 && (
-        <ul className="eval-case-list">
-          {suite.cases.map((tc) => (
-            <li key={`${tc.kind}-${tc.name}`} className="eval-case-row">
-              <span className={`eval-case-status eval-case-status--${tc.status}`}>
-                {tc.status.toUpperCase()}
-              </span>
-              <code className="eval-case-name">{tc.name}</code>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function TrialEvidence({ trial, id }: { trial: Trial; id: string }) {
-  const tb = trial.test_breakdown;
-  const featChip = tb && tb.feature.total > 0 ? `Feature ${tb.feature.passed}/${tb.feature.total}` : null;
-  const regChip = tb && tb.regression.total > 0 ? `Regression ${tb.regression.passed}/${tb.regression.total}` : null;
-  const partialChip =
-    tb && tb.partial_score !== null ? `Partial ${(tb.partial_score * 100).toFixed(0)}%` : null;
-
-  return (
-    <details className="history-row">
-      <summary>
-        {trial.role} · {trial.label} · Run {trial.attempt} ·{' '}
-        {trial.reward === null ? 'Unscored' : `Reward ${trial.reward}`}
-        {featChip ? ` · ${featChip}` : ''}
-        {regChip ? ` · ${regChip}` : ''}
-        {partialChip ? ` · ${partialChip}` : ''}
-        {trial.failure ? ` · ${trial.failure.replace(/_/g, ' ')}` : ''}
-      </summary>
-      <div className="workflow-panel">
-        <p>
-          {trial.origin === 'harbor' ? 'Isolated sandbox verifier evidence' : 'Unscored provider/sandbox event'} ·{' '}
-          {trial.trustworthy ? 'Verified execution' : 'Unscored evidence'}
-        </p>
-        {trial.configuration && (
-          <p>
-            Model <code className="code-inline">{trial.configuration.model}</code>
-          </p>
-        )}
-        {trial.requested_model && trial.requested_model !== trial.configuration?.model && (
-          <p>Requested {trial.requested_model}</p>
-        )}
-        {trial.failure && <p>Failure category: {trial.failure.replace(/_/g, ' ')}</p>}
-
-        {tb && (
-          <div className="eval-breakdown-box">
-            <div className="eval-breakdown-summary">
-              <span>
-                <strong>Granular Test Breakdown</strong>
-                {tb.partial_score !== null ? ` · Partial score ${(tb.partial_score * 100).toFixed(1)}%` : ''}
-              </span>
-              <span
-                style={{
-                  color: tb.protected_guard_passed ? 'var(--success-text)' : 'var(--danger-text)',
-                  fontWeight: 500,
-                }}
-              >
-                {tb.protected_guard_passed
-                  ? 'Protected-test guard passed'
-                  : `Protected test modified: ${tb.protected_files_touched.join(', ')}`}
-              </span>
-            </div>
-            <SuiteCaseList title="Feature Tests" suite={tb.feature} />
-            <SuiteCaseList title="Regression Tests" suite={tb.regression} />
-          </div>
-        )}
-
-        {trial.agent_name && (
-          <p>
-            {trial.agent_name} {trial.agent_version}
-            {trial.resolved_models.length > 0 ? ` · ${trial.resolved_models.join(', ')}` : ''}
-          </p>
-        )}
-        {trial.flags.length > 0 && (
-          <ul>
-            {trial.flags.map((flag) => (
-              <li key={flag}>{flag.replace(/_/g, ' ')}</li>
-            ))}
-          </ul>
-        )}
-        {trial.process && (
-          <>
-            <p>
-              {trial.process.timed_out
-                ? 'Timed out'
-                : trial.process.exit_code === null
-                  ? 'No exit code'
-                  : `Exit ${trial.process.exit_code}`}
-            </p>
-            <pre className="evidence-command">{trial.process.argv.join(' ')}</pre>
-            {trial.process.console_log && (
-              <EvidenceLog
-                path={`/history/evaluation/${id}/logs/${encodeURIComponent(trial.process.console_log)}`}
-              />
-            )}
-          </>
-        )}
-        {trial.submitted_files !== null && (
-          <div>
-            <strong>
-              {trial.submitted_files.length} changed{' '}
-              {trial.submitted_files.length === 1 ? 'file' : 'files'}
-            </strong>
-            <ul>
-              {trial.submitted_files.map((file) => (
-                <li key={`${file.operation}-${file.path}`}>
-                  {file.operation} <code>{file.path}</code>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    </details>
-  );
 }
 
 export function EvaluationPage() {
@@ -410,27 +256,27 @@ export function EvaluationPage() {
 
   const displayed = report?.id === reportId ? report : null;
 
-  const getSlotStatus = (slot: ModelSlot) => {
+  const getSlotStatus = (slot: ModelSlot): SlotReadiness => {
     const inferred = inferProvider(slot.model);
     if (!providers) {
-      return { tone: 'muted' as const, text: 'Checking server readiness…' };
+      return { tone: 'muted', text: 'Checking server readiness…' };
     }
     if (inferred === 'gemini') {
       return providers.gemini.configured
-        ? { tone: 'success' as const, text: 'Gemini API ready' }
-        : { tone: 'warning' as const, text: 'Awaiting GEMINI_API_KEY in Secrets' };
+        ? { tone: 'success', text: 'Gemini API ready' }
+        : { tone: 'warning', text: 'Awaiting GEMINI_API_KEY in Secrets' };
     }
     if (inferred === 'groq') {
       return providers.groq.configured
-        ? { tone: 'success' as const, text: 'Groq API ready' }
-        : { tone: 'warning' as const, text: 'Awaiting GROQ_API_KEY in Secrets' };
+        ? { tone: 'success', text: 'Groq API ready' }
+        : { tone: 'warning', text: 'Awaiting GROQ_API_KEY in Secrets' };
     }
     if (inferred === 'adaption') {
       return providers.adaption?.configured
-        ? { tone: 'success' as const, text: 'Adaption AI ready' }
-        : { tone: 'warning' as const, text: 'Awaiting ADAPTION_API_KEY in Secrets' };
+        ? { tone: 'success', text: 'Adaption AI ready' }
+        : { tone: 'warning', text: 'Awaiting ADAPTION_API_KEY in Secrets' };
     }
-    return { tone: 'warning' as const, text: 'External provider (unconfigured)' };
+    return { tone: 'warning', text: 'External provider (unconfigured)' };
   };
 
   const runButtonLabel =
@@ -521,149 +367,17 @@ export function EvaluationPage() {
                 gap: '12px',
               }}
             >
-              {slots.map((slot, index) => {
-                const status = getSlotStatus(slot);
-                const statusColor =
-                  status.tone === 'success'
-                    ? 'var(--success-text)'
-                    : status.tone === 'warning'
-                      ? 'var(--warning-text)'
-                      : 'var(--text-muted)';
-                const presets = MODEL_PRESETS_BY_SLOT[slot.id];
-                const matchedPreset = presets.find(
-                  (preset) => preset.id.toLowerCase() === slot.model.trim().toLowerCase()
-                );
-                const isCustom = Boolean(slot.customMode || !matchedPreset);
-                const dropdownValue = isCustom ? '__custom__' : matchedPreset!.id;
-                const activeSpec = findModelSpec(slot.model);
-
-                return (
-                  <div
-                    key={slot.id}
-                    style={{
-                      padding: '14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: `1px solid ${slot.enabled ? 'var(--border-strong)' : 'var(--border-default)'}`,
-                      backgroundColor: slot.enabled ? 'var(--bg-card)' : 'var(--bg-muted)',
-                      opacity: slot.enabled ? 1 : 0.72,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '10px',
-                      transition: 'border-color 0.15s ease, opacity 0.15s ease',
-                    }}
-                  >
-                    <label
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        flexWrap: 'wrap',
-                        gap: '4px 8px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                        <input
-                          type="checkbox"
-                          checked={slot.enabled}
-                          onChange={() => toggleSlot(slot.id)}
-                          style={{ width: '18px', height: '18px', accentColor: 'var(--accent-primary)', cursor: 'pointer', flexShrink: 0 }}
-                        />
-                        <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {index + 1}. {slot.displayName}
-                        </span>
-                      </span>
-                      <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-                        {slot.family}
-                      </span>
-                    </label>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <div className="model-select-label-row">
-                        <label
-                          htmlFor={`model-select-${slot.id}`}
-                          style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 500 }}
-                        >
-                          Model selection
-                        </label>
-                        <ModelInfoTooltip
-                          slotId={slot.id}
-                          selectedModelId={slot.model}
-                          slotDisplayName={slot.displayName}
-                        />
-                      </div>
-
-                      <select
-                        id={`model-select-${slot.id}`}
-                        value={dropdownValue}
-                        disabled={!slot.enabled}
-                        onChange={(e) => selectSlotPreset(slot.id, e.target.value)}
-                        title={
-                          activeSpec
-                            ? `${activeSpec.label} — ${activeSpec.parameters} · ${activeSpec.contextWindow} context. ${activeSpec.bestFor}`
-                            : `Custom model identifier (${slot.model || slot.placeholder})`
-                        }
-                        style={{
-                          fontSize: '12.5px',
-                          width: '100%',
-                        }}
-                      >
-                        {presets.map((preset) => (
-                          <option
-                            key={preset.id}
-                            value={preset.id}
-                            title={`${preset.parameters} · ${preset.contextWindow} · ${preset.bestFor}`}
-                          >
-                            {preset.label}
-                          </option>
-                        ))}
-                        <option value="__custom__">Custom model identifier…</option>
-                      </select>
-
-                      {isCustom ? (
-                        <input
-                          aria-label={`${slot.displayName} custom model identifier`}
-                          value={slot.model}
-                          maxLength={140}
-                          disabled={!slot.enabled}
-                          placeholder={slot.placeholder}
-                          onChange={(e) => updateSlotModel(slot.id, e.target.value)}
-                          style={{
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '12px',
-                            width: '100%',
-                          }}
-                        />
-                      ) : activeSpec ? (
-                        <div className="model-spec-caption">
-                          <span>{activeSpec.parameters}</span>
-                          <span>· {activeSpec.contextWindow} context</span>
-                        </div>
-                      ) : null}
-                    </div>
-
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        fontSize: '11.5px',
-                        color: statusColor,
-                        fontWeight: 500,
-                      }}
-                    >
-                      {status.tone === 'success' ? (
-                        <CheckCircle2 size={13} style={{ flexShrink: 0 }} />
-                      ) : status.tone === 'warning' ? (
-                        <AlertCircle size={13} style={{ flexShrink: 0 }} />
-                      ) : (
-                        <Info size={13} style={{ flexShrink: 0 }} />
-                      )}
-                      <span>{status.text}</span>
-                    </div>
-                  </div>
-                );
-              })}
+              {slots.map((slot, index) => (
+                <ModelSlotCard
+                  key={slot.id}
+                  slot={slot}
+                  index={index}
+                  status={getSlotStatus(slot)}
+                  onToggle={toggleSlot}
+                  onSelectPreset={selectSlotPreset}
+                  onUpdateModel={updateSlotModel}
+                />
+              ))}
             </div>
 
             {(groqMissingKey || adaptionMissingKey || geminiMissingKey) && (
@@ -845,151 +559,7 @@ export function EvaluationPage() {
             </button>
           </div>
 
-          {/* Head-to-Head Multi-Model Comparison Matrix */}
-          {displayed.metrics.length > 0 && (
-            <div className="table-scroll-wrap" style={{ borderTop: '1px solid var(--border-default)', paddingTop: '14px' }}>
-              <h3 style={{ marginBottom: '10px' }}>Head-to-head model comparison</h3>
-              <table
-                style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  fontSize: '12.5px',
-                  fontVariantNumeric: 'tabular-nums',
-                }}
-              >
-                <thead>
-                  <tr
-                    style={{
-                      borderBottom: '1px solid var(--border-strong)',
-                      color: 'var(--text-muted)',
-                      textAlign: 'left',
-                    }}
-                  >
-                    <th style={{ padding: '8px 10px', fontWeight: 600 }}>Agent</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600 }}>Model ID</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'right' }}>Scored</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'right' }}>Verified pass</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'right' }}>Feature cases</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'right' }}>Regression cases</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'right' }}>Partial score</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'right' }}>Mean latency</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'right' }}>Tokens (in / out)</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600 }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayed.metrics.map((metric) => {
-                    const matchedTrial = displayed.trials.find((t) => t.label === metric.label);
-                    const modelDisplay =
-                      metric.model ||
-                      matchedTrial?.configuration?.model ||
-                      matchedTrial?.resolved_models[0] ||
-                      '–';
-                    const unavailableCount = metric.failure_counts.provider_unavailable || 0;
-                    const errorCount = metric.failure_counts.provider_error || 0;
-                    const statusLabel =
-                      metric.scored > 0
-                        ? metric.verified_success.value === 1
-                          ? 'Passed'
-                          : 'Evaluated'
-                        : unavailableCount > 0
-                          ? 'Key required'
-                          : errorCount > 0
-                            ? 'Provider error'
-                            : 'Unscored';
-                    const statusColor =
-                      metric.scored > 0
-                        ? 'var(--success-text)'
-                        : unavailableCount > 0
-                          ? 'var(--warning-text)'
-                          : 'var(--danger-text)';
-                    const featCasesText =
-                      typeof metric.feature_cases_total === 'number' && metric.feature_cases_total > 0
-                        ? `${metric.feature_cases_passed ?? 0}/${metric.feature_cases_total}`
-                        : '–';
-                    const regCasesText =
-                      typeof metric.regression_cases_total === 'number' && metric.regression_cases_total > 0
-                        ? `${metric.regression_cases_passed ?? 0}/${metric.regression_cases_total}`
-                        : '–';
-                    const partialPct =
-                      typeof metric.mean_partial_score === 'number'
-                        ? metric.mean_partial_score * 100
-                        : null;
-
-                    return (
-                      <tr
-                        key={metric.label}
-                        style={{
-                          borderBottom: '1px solid var(--border-default)',
-                          height: '42px',
-                        }}
-                      >
-                        <td style={{ padding: '8px 10px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {metric.label}
-                        </td>
-                        <td
-                          style={{
-                            padding: '8px 10px',
-                            fontFamily: 'var(--font-mono)',
-                            fontSize: '11.5px',
-                            color: 'var(--text-secondary)',
-                          }}
-                        >
-                          {modelDisplay}
-                        </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--text-primary)' }}>
-                          {metric.scored}/{metric.scheduled}
-                        </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {displayRate(metric.verified_success)}
-                        </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--text-primary)' }}>
-                          {featCasesText}
-                        </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                          {regCasesText}
-                        </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right' }}>
-                          {partialPct === null ? (
-                            <span style={{ color: 'var(--text-muted)' }}>–</span>
-                          ) : (
-                            <div className="eval-mini-bar-cell">
-                              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                                {partialPct.toFixed(1)}%
-                              </span>
-                              <div className="eval-mini-bar-track" aria-hidden="true">
-                                <div
-                                  className="eval-mini-bar-fill"
-                                  style={{
-                                    width: `${Math.max(partialPct > 0 ? 4 : 0, Math.min(100, partialPct))}%`,
-                                    backgroundColor:
-                                      partialPct >= 99.9
-                                        ? 'var(--success)'
-                                        : partialPct > 0
-                                          ? 'var(--accent-primary)'
-                                          : 'var(--danger)',
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                          {metric.mean_agent_seconds === null ? '–' : `${metric.mean_agent_seconds.toFixed(2)} s`}
-                        </td>
-                        <td style={{ padding: '8px 10px', textAlign: 'right', color: 'var(--text-secondary)' }}>
-                          {metric.input_tokens_total ?? '–'} / {metric.output_tokens_total ?? '–'}
-                        </td>
-                        <td style={{ padding: '8px 10px', fontWeight: 500, color: statusColor }}>
-                          {statusLabel}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <ComparisonMatrixTable metrics={displayed.metrics} trials={displayed.trials} />
 
           {displayed.package && (
             <details className="snapshot-details">
@@ -1047,7 +617,7 @@ export function EvaluationPage() {
               <dl className="metrics-grid" style={{ fontVariantNumeric: 'tabular-nums' }}>
                 <div>
                   <dt>Verified success</dt>
-                  <dd>{displayRate(metric.verified_success)}</dd>
+                  <dd>{formatBenchmarkRate(metric.verified_success)}</dd>
                 </div>
                 <div>
                   <dt>Partial test score</dt>
@@ -1062,7 +632,7 @@ export function EvaluationPage() {
                   <dd>
                     {typeof metric.feature_cases_total === 'number' && metric.feature_cases_total > 0
                       ? `${metric.feature_cases_passed ?? 0}/${metric.feature_cases_total} passed`
-                      : displayRate(metric.feature_pass)}
+                      : formatBenchmarkRate(metric.feature_pass)}
                   </dd>
                 </div>
                 <div>
@@ -1070,12 +640,12 @@ export function EvaluationPage() {
                   <dd>
                     {typeof metric.regression_cases_total === 'number' && metric.regression_cases_total > 0
                       ? `${metric.regression_cases_passed ?? 0}/${metric.regression_cases_total} passed`
-                      : displayRate(metric.regression_pass)}
+                      : formatBenchmarkRate(metric.regression_pass)}
                   </dd>
                 </div>
                 <div>
                   <dt>Build success</dt>
-                  <dd>{displayRate(metric.build_success)}</dd>
+                  <dd>{formatBenchmarkRate(metric.build_success)}</dd>
                 </div>
                 <div>
                   <dt>Mean duration</dt>
@@ -1108,12 +678,12 @@ export function EvaluationPage() {
             </div>
           ))}
 
-          {displayed.oracle && <TrialEvidence trial={displayed.oracle} id={displayed.id} />}
+          {displayed.oracle && <TrialEvidencePanel trial={displayed.oracle} id={displayed.id} />}
           {displayed.baseline_control && (
-            <TrialEvidence trial={displayed.baseline_control} id={displayed.id} />
+            <TrialEvidencePanel trial={displayed.baseline_control} id={displayed.id} />
           )}
           {displayed.trials.map((trial) => (
-            <TrialEvidence
+            <TrialEvidencePanel
               trial={trial}
               id={displayed.id}
               key={`${trial.label}-${trial.attempt}`}
