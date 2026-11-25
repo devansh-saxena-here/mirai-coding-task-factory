@@ -1,10 +1,4 @@
 import type { TaskResponse } from './types.ts';
-import {
-  buildProtectedTestGuardPrompt,
-  buildRepoContextExcerpt,
-  filterProtectedPriorityPaths,
-  normalizeProtectedTestFiles,
-} from './providerUtils.ts';
 
 const DEFAULT_ADAPTION_BASE_URL = 'https://api.prod.adaptionlabs.ai/api/v1';
 
@@ -25,6 +19,46 @@ export function getAdaptionChatCompletionsUrl(): string {
 
 export function normalizeAdaptionModelId(modelIdentifier: string): string {
   return modelIdentifier.trim().replace(/^adaption\//i, '');
+}
+
+function buildContextExcerpt(
+  files: Record<string, string>,
+  maxBytes = 28000,
+  priorityPaths: string[] = []
+): string {
+  const normalizedPriority = priorityPaths.map((p) => p.replace(/^\/+/, '').toLowerCase());
+  const isPriorityFile = (filePath: string) => {
+    const lower = filePath.replace(/^\/+/, '').toLowerCase();
+    return normalizedPriority.some(
+      (p) => lower === p || lower.endsWith(`/${p}`) || p.endsWith(`/${lower}`)
+    );
+  };
+
+  const entries = Object.entries(files).sort(([a], [b]) => {
+    const score = (p: string) => {
+      const lower = p.toLowerCase();
+      if (isPriorityFile(p)) return -1;
+      if (lower === 'pyproject.toml' || lower === 'package.json' || lower === 'requirements.txt') return 0;
+      if (lower.startsWith('readme')) return 1;
+      if (lower.includes('test')) return 3;
+      return 2;
+    };
+    return score(a) - score(b) || a.localeCompare(b);
+  });
+
+  const chunks: string[] = [];
+  let usedBytes = 0;
+
+  for (const [filePath, content] of entries) {
+    if (usedBytes >= maxBytes) break;
+    const priority = isPriorityFile(filePath);
+    const perFileCap = priority ? 16000 : 2500;
+    const slice = content.slice(0, Math.min(content.length, perFileCap, maxBytes - usedBytes));
+    chunks.push(`--- FILE: ${filePath} ---\n${slice}`);
+    usedBytes += Buffer.byteLength(slice, 'utf8');
+  }
+
+  return chunks.join('\n\n');
 }
 
 function stripReasoningBlocks(raw: string): string {
@@ -326,18 +360,27 @@ export async function runLiveAdaptionAgentAttempt(params: {
   const adaptionModel = normalizeAdaptionModelId(params.modelIdentifier);
   const endpointUrl = getAdaptionChatCompletionsUrl();
 
-  const normalizedProtected = normalizeProtectedTestFiles(params.protectedTestFiles);
-  const safePriorityFiles = filterProtectedPriorityPaths(params.task.relevant_files, normalizedProtected);
+  const normalizedProtected = Array.from(
+    new Set(
+      (params.protectedTestFiles || [])
+        .map((p) => p.replace(/\\/g, '/').replace(/^\/+/, '').trim())
+        .filter(Boolean)
+    )
+  );
+  const protectedLower = new Set(normalizedProtected.map((p) => p.toLowerCase()));
+  const safePriorityFiles = (params.task.relevant_files || []).filter(
+    (p) => !protectedLower.has(p.replace(/\\/g, '/').replace(/^\/+/, '').toLowerCase())
+  );
 
-  const contextText = buildRepoContextExcerpt({
-    files: params.files,
-    maxBytes: 28000,
-    priorityPaths: safePriorityFiles,
-    priorityFileCap: 16000,
-    supportingFileCap: 2500,
-  });
+  const contextText = buildContextExcerpt(params.files, 28000, safePriorityFiles);
 
-  const protectedGuardBlock = buildProtectedTestGuardPrompt(normalizedProtected, 40);
+  const protectedGuardBlock =
+    normalizedProtected.length > 0
+      ? `\nPROTECTED ORIGINAL TEST FILES (READ-ONLY — DO NOT MODIFY, CREATE, OR DELETE ANY OF THESE PATHS):\n${normalizedProtected
+          .slice(0, 40)
+          .map((p) => `- ${p}`)
+          .join('\n')}\nTouching any path listed above causes an automatic 0.0 verifier score (modified_protected_tests). Edit ONLY production source files.\n`
+      : '\nPROTECTED-TEST RULE: Do NOT modify, create, or delete any existing test files. Edit ONLY production source files.\n';
 
   const userPrompt = `Solve this coding task against the repository files below.
 Keep reasoning concise and return ONLY a single valid JSON object (no markdown fences or commentary outside JSON) with this exact structure:

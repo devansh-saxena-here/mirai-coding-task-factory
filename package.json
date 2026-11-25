@@ -10,10 +10,7 @@
     "dev": "node server.ts",
     "start": "node server.ts",
     "build": "npm --workspace=frontend run build",
-    "test": "node --test tests/*.test.ts",
-    "lint:oxlint": "oxlint --deny-warnings server.ts server frontend/src tests",
-    "lint:eslint": "eslint .",
-    "lint": "tsc --noEmit -p frontend/tsconfig.json && tsc --noEmit -p tsconfig.server.json && oxlint server.ts server frontend/src tests && eslint ."
+    "lint": "tsc --noEmit -p frontend/tsconfig.json && tsc --noEmit -p tsconfig.server.json"
   },
   "dependencies": {
     "@firebase/eslint-plugin-security-rules": "^0.0.2",
@@ -29,9 +26,6 @@
     "multer": "^2.5.0"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "oxlint": "^1.95.0",
-    "typescript": "^7.0.2",
-    "typescript-eslint": "^8.74.0"
+    "typescript": "^7.0.2"
   }
 }

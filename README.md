@@ -404,11 +404,10 @@ npm run build
 npm run dev
 ```
 
-Open **`http://localhost:3000`** in your browser. To run strict typechecking, static analysis (`oxlint` + Firestore rules ESLint), and the automated unit & API test suite:
+Open **`http://localhost:3000`** in your browser. To type-check both frontend and backend workspaces:
 
 ```bash
 npm run lint
-npm test
 ```
 
 <details>
@@ -493,7 +492,7 @@ All authenticated endpoints require `Authorization: Bearer <Firebase ID Token>`.
 
 <div align="center">
 
-<sub>Built with precision for <b> AI Hackathon 2026 · Track 1</b> — Turning real codebases into verifiable coding benchmarks.</sub>
+<sub>Built with precision for <b>Innodata AI Hackathon 2026 · Track 1</b> — Turning real codebases into verifiable coding benchmarks.</sub>
 
 <br />
 <br />

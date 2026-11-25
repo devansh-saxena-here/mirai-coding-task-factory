@@ -770,7 +770,7 @@ if __name__ == "__main__":
     main()
 `;
 
-export function parseIndividualTestCases(output: string): ParsedTestCase[] {
+function parseIndividualTestCases(output: string): ParsedTestCase[] {
   const byName = new Map<string, ParsedTestCase['status']>();
   const lines = output.split(/\r?\n/);
 

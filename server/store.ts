@@ -21,8 +21,6 @@ import type {
   TestSuiteResponse,
   ValidationReport,
 } from './types.ts';
-import { csvCell } from './evaluationCsv.ts';
-import { makeRate } from './testBreakdown.ts';
 
 export interface ProjectRecord {
   id: string;
@@ -75,7 +73,7 @@ export function randomHex(bytes = 16): string {
   return crypto.randomBytes(bytes).toString('hex');
 }
 
-export class DiskBackedWorkflowStore {
+class DiskBackedWorkflowStore {
   private readonly stateDir: string;
   private readonly stateFile: string;
   private readonly exportsDir: string;
@@ -90,10 +88,8 @@ export class DiskBackedWorkflowStore {
   validationLogs = new Map<string, string>();
   evaluationLogs = new Map<string, string>();
 
-  constructor(stateDirOverride?: string) {
-    this.stateDir = path.resolve(
-      stateDirOverride?.trim() || process.env.CTF_STATE_DIR?.trim() || path.join(process.cwd(), '.mirai-state')
-    );
+  constructor() {
+    this.stateDir = path.resolve(process.env.CTF_STATE_DIR?.trim() || path.join(process.cwd(), '.mirai-state'));
     this.stateFile = path.join(this.stateDir, 'state.json');
     this.exportsDir = path.join(this.stateDir, 'exports');
     this.hydrate();
@@ -553,6 +549,23 @@ export class DiskBackedWorkflowStore {
   ): LeaderboardResponse {
     const scope: LeaderboardScope = opts.scope === 'all_runs' ? 'all_runs' : 'latest_per_task';
 
+    const wilson95 = (k: number, n: number): [number, number] | null => {
+      if (n <= 0) return null;
+      const z = 1.96;
+      const p = k / n;
+      const denom = 1 + (z * z) / n;
+      const center = (p + (z * z) / (2 * n)) / denom;
+      const margin = (z * Math.sqrt((p * (1 - p) + (z * z) / (4 * n)) / n)) / denom;
+      return [Math.max(0, center - margin), Math.min(1, center + margin)];
+    };
+
+    const makeRate = (numerator: number, denominator: number): Rate => ({
+      numerator,
+      denominator,
+      value: denominator > 0 ? numerator / denominator : null,
+      wilson95: wilson95(numerator, denominator),
+    });
+
     const inferProvider = (model: string, label: string): 'gemini' | 'groq' | 'adaption' | 'other' => {
       const m = model.toLowerCase();
       const l = label.toLowerCase();
@@ -973,6 +986,12 @@ export class DiskBackedWorkflowStore {
   }
 
   formatLeaderboardCsv(data: LeaderboardResponse): string {
+    const csvEscape = (value: string | number | null | undefined): string => {
+      if (value === null || value === undefined) return '';
+      const str = String(value);
+      if (/[",\n\r]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+      return str;
+    };
     const pct = (rate: Rate) => (rate.value === null ? '' : `${(rate.value * 100).toFixed(1)}%`);
 
     const header = [
@@ -1027,7 +1046,7 @@ export class DiskBackedWorkflowStore {
         m.avg_tokens_per_trial ?? '',
         m.top_failure ?? '',
       ]
-        .map(csvCell)
+        .map(csvEscape)
         .join(',')
     );
 
